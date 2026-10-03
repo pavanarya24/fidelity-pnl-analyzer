@@ -4,8 +4,43 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
-<title>Fidelity P&L Analyzer: real net P&L from your history CSV</title>
-<meta name="description" content="Drop in your Fidelity history CSV and get net P&L, profit factor, drawdown and an equity curve. Runs entirely in your browser; your file is never uploaded.">
+<title>Fidelity P&amp;L Analyzer: free net P&amp;L, drawdown and profit factor from your history CSV</title>
+<meta name="description" content="Free Fidelity P&amp;L calculator: net P&amp;L, profit factor, drawdown and an equity curve from your history CSV. Runs in your browser; nothing is uploaded.">
+<link rel="canonical" href="https://example.com/">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Fidelity P&amp;L Analyzer">
+<meta property="og:title" content="Fidelity P&amp;L Analyzer: free net P&amp;L, drawdown and profit factor">
+<meta property="og:description" content="Drop in your Fidelity history CSV and get net P&amp;L after fees, profit factor, drawdown, monthly P&amp;L and an equity curve. Your file never leaves your browser.">
+<meta property="og:url" content="https://example.com/">
+<meta property="og:image" content="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='1200'%20height='630'%3E%3Crect%20width='1200'%20height='630'%20fill='%23151c24'/%3E%3Cpolyline%20points='80,470%20280,430%20480,450%20680,330%20880,360%201120,200'%20fill='none'%20stroke='%234cc38a'%20stroke-width='10'/%3E%3Ctext%20x='80'%20y='130'%20fill='%23e8edf2'%20font-family='sans-serif'%20font-size='64'%3EFidelity%20P%26L%20Analyzer%3C/text%3E%3Ctext%20x='80'%20y='200'%20fill='%2393a0ae'%20font-family='sans-serif'%20font-size='34'%3EPrivacy-first%20trade%20analyzer%3C/text%3E%3C/svg%3E">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Fidelity P&amp;L Analyzer: free net P&amp;L, drawdown and profit factor">
+<meta name="twitter:description" content="Turn your Fidelity history CSV into net P&amp;L, profit factor, drawdown and an equity curve. Runs entirely in your browser.">
+<meta name="twitter:image" content="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='1200'%20height='630'%3E%3Crect%20width='1200'%20height='630'%20fill='%23151c24'/%3E%3Cpolyline%20points='80,470%20280,430%20480,450%20680,330%20880,360%201120,200'%20fill='none'%20stroke='%234cc38a'%20stroke-width='10'/%3E%3Ctext%20x='80'%20y='130'%20fill='%23e8edf2'%20font-family='sans-serif'%20font-size='64'%3EFidelity%20P%26L%20Analyzer%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Fidelity P&L Analyzer",
+  "applicationCategory": "FinanceApplication",
+  "applicationSubCategory": "WebApplication",
+  "operatingSystem": "Any (web browser)",
+  "browserRequirements": "Requires JavaScript",
+  "url": "https://example.com/",
+  "description": "A free, privacy-first analyzer that turns a Fidelity Activity & Orders history CSV into net P&L after fees, profit factor, drawdown, monthly P&L and an equity curve. The file is processed only in the browser.",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "featureList": [
+    "FIFO trade matching for long and short positions",
+    "Net P&L after commissions and fees",
+    "Profit factor, win rate, average win and loss",
+    "Daily drawdown and maximum drawdown",
+    "Monthly P&L and inline equity curve",
+    "Fully client-side; no uploads, no analytics"
+  ]
+}
+</script>
 <style>
 :root{
   --bg:#eef1f5; --panel:#ffffff; --ink:#15202b; --muted:#5b6876; --line:#d5dbe3;
@@ -57,14 +92,23 @@ th{color:var(--muted);font-weight:600;font-size:.85rem}
 .note{color:var(--muted);font-size:.85rem;margin-top:22px;max-width:75ch}
 details{margin:14px 0;color:var(--muted);font-size:.92rem}
 summary{cursor:pointer;color:var(--ink)}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 12px}
+.mapgrid label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
+select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 8px}
+select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.faq{margin-top:34px;border-top:1px solid var(--line);padding-top:18px}
+.faq h2{font-size:1.25rem}
+.faq h3{font-size:1rem;margin:16px 0 4px}
+.faq p{margin:0 0 8px;color:var(--muted);max-width:78ch}
+.faq a{color:var(--accent)}
 </style>
 </head>
 <body>
 <main>
   <h1>Fidelity P&amp;L Analyzer</h1>
-  <p class="lede">Fidelity's history file lists fills, not results. Drop it in to get net P&amp;L after fees, profit factor, drawdown and an equity curve, using FIFO matching for longs and shorts.</p>
+  <p class="lede">Fidelity's history file lists fills, not results. Drop it in to get net P&amp;L after fees, profit factor, drawdown, monthly P&amp;L and an equity curve, using FIFO matching for longs and shorts.</p>
 
-  <div class="privacy"><div><b>Your file never leaves your browser.</b> This page makes no network requests and has no server or analytics. Disconnect from the internet after loading it and it still works.</div></div>
+  <div class="privacy"><div><b>Your file never leaves your browser. It works offline.</b> This page makes no network requests and has no server, account or analytics. Disconnect from the internet after loading it and it still works.</div></div>
 
   <div class="controls">
     <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a Fidelity history CSV file">
@@ -76,8 +120,15 @@ summary{cursor:pointer;color:var(--ink)}
       <input type="number" id="capital" min="1" step="100" value="10000">
     </label>
   </div>
-  <p class="demoline"><button id="demo" type="button">Try it with demo data</button> <span>Synthetic trades, so you can see the output without a file.</span></p>
+  <p class="demoline"><button id="demo" type="button">Try it with demo data</button> <span>Synthetic trades (generated on the fly, not real results), so you can see the output without a file.</span></p>
   <div id="msg" role="status"></div>
+
+  <section id="mapper" class="card hidden" aria-live="polite">
+    <h2>Map your columns</h2>
+    <p>We could not recognise this file's format. Choose which column holds each field, then analyze. Leave "Side / action" on "Infer from quantity sign" if you do not have a buy/sell column.</p>
+    <div class="mapgrid" id="mapgrid"></div>
+    <button id="mgo" type="button">Analyze with this mapping</button>
+  </section>
 
   <section id="out" class="hidden">
     <div id="warn"></div>
@@ -89,11 +140,24 @@ summary{cursor:pointer;color:var(--ink)}
 
   <details>
     <summary>How the numbers are calculated</summary>
-    <p>Only stock buys and sells are used; option rows and entries with no symbol are skipped. Each fill's net cash amount from Fidelity's Amount column is used, so commissions and fees are included. Fills are matched first-in-first-out per symbol, and positions can carry across days. Closed trades are counted per closing fill. Drawdown is measured on end-of-day realized equity against the running peak (never below starting capital). Margin interest, borrow fees and other non-trade entries are not included.</p>
+    <p>Only stock buys and sells are used; option rows and entries with no symbol are skipped. Each fill's net cash amount from Fidelity's Amount column is used, so commissions and fees are included. Fills are matched first-in-first-out per symbol, long and short, and positions can carry across days. A closed trade is one closing fill. Drawdown is measured on end-of-day realized equity against the running peak (which never falls below starting capital). Margin interest, borrow fees and other non-trade entries are not included.</p>
+    <p>Duplicate rows inside one file are kept on purpose: scalpers often produce genuinely identical fills, and removing them would corrupt the P&amp;L.</p>
     <p>Fidelity history has dates but no times. Within a day, fills follow the file order (newest first is detected automatically). Totals are unaffected, but individual trade results can shift.</p>
     <p>Check the net P&amp;L and the "sum of all fills" line against your Fidelity statements. If positions show as unmatched, the export likely starts after they were opened.</p>
   </details>
-  <p class="note">For analysis only. Not financial, tax or investment advice. Past results do not predict future results. Verify every figure against your official Fidelity statements.</p>
+  <p class="note">For analysis only. Not financial, tax or investment advice. Verify against your official Fidelity statements. Past results do not predict future results.</p>
+
+  <section class="faq" aria-labelledby="faq-h">
+    <h2 id="faq-h">Frequently asked questions</h2>
+    <h3>How do I export my Fidelity history?</h3>
+    <p>Sign in to Fidelity, open <em>Accounts</em> &gt; <em>Activity &amp; Orders</em> &gt; <em>History</em>, set your date range, choose <em>All Activity</em>, and click <em>Download</em> to save the CSV. This Fidelity CSV import reads the Activity &amp; Orders history layout (and the older Accounts History layout). Use a range that starts before your earliest open position so trades are not left unmatched.</p>
+    <h3>How does FIFO matching work?</h3>
+    <p>Fills are matched first-in-first-out, separately per symbol and for both long and short positions. Each fill's P&amp;L is computed from Fidelity's own net cash amount, so commissions and fees are already included, and positions carry across days. A closed trade is one closing fill; counts will differ from tools that define a trade differently. Duplicate identical fills within a file are kept, because real scalping produces genuine repeats.</p>
+    <h3>Is my file uploaded anywhere?</h3>
+    <p>No. This Fidelity trade history analyzer is a single static page with no server, no account, no cookies and no analytics. A content security policy blocks every network request, so the file is parsed only in your browser and the tool keeps working offline. That is the whole point of a privacy-first Fidelity P&amp;L calculator.</p>
+    <h3>What is not supported?</h3>
+    <p>Only Fidelity history CSVs, stocks only. Options, margin interest, borrow fees and dividends are not included, and open positions are not marked to market, so the output is realized P&amp;L. Fidelity history has no time of day, so within-day ordering follows the file; totals are unaffected but individual trade results can change. If you want a free Fidelity trading journal, this is a lightweight report, not a journaling or tax tool.</p>
+  </section>
 </main>
 
 <script>
@@ -120,45 +184,113 @@ function num(s){
   if(/^\(.*\)$/.test(t))t="-"+t.slice(1,-1);
   return t===""?NaN:parseFloat(t);
 }
-function analyze(text,capital){
-  text=text.replace(/^\uFEFF/,"");
-  const rows=parseCSV(text);
-  const hi=rows.findIndex(r=>{
-    const j=r.join(",").toLowerCase();
-    return j.includes("symbol")&&j.includes("amount")&&(j.includes("action")||j.includes("description"));
-  });
-  if(hi<0)throw new Error("Could not find the table header. The file needs Symbol, Amount and Description (or Action) columns. Use Fidelity's History download.");
-  const head=rows[hi].map(h=>h.trim().replace(/\s*\(\$\)\s*/g,"").toLowerCase());
-  const col=n=>head.indexOf(n);
-  const iAct=col("action")>=0?col("action"):col("description");
-  const iSym=col("symbol"),iAmt=col("amount"),iQty=col("quantity");
-  let iDate=["run date","date","trade date"].map(col).find(i=>i>=0);
-  if(iAct<0||iSym<0||iAmt<0||iQty<0||iDate==null)throw new Error("Missing a required column. Found: "+head.join(", "));
+function normHead(row){
+  return row.map(h=>String(h).trim().replace(/\s*\(\$\)\s*/g,"").toLowerCase());
+}
+function findHeaderIndex(rows){
+  for(let i=0;i<rows.length;i++){
+    const j=rows[i].join(",").toLowerCase();
+    if(j.includes("symbol")&&j.includes("amount")&&(j.includes("action")||j.includes("description")))return i;
+  }
+  return -1;
+}
+function guessHeaderIndex(rows){
+  const h=findHeaderIndex(rows);
+  if(h>=0)return h;
+  let best=0,bestN=-1;
+  for(let i=0;i<Math.min(rows.length,20);i++){
+    const n=rows[i].filter(c=>String(c).trim()!=="").length;
+    if(n>bestN){bestN=n;best=i;}
+  }
+  return best;
+}
+function toKey(s){const m=String(s).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`:null;}
+function dataRows(rows,headerIndex){
   const data=[];
-  for(let i=hi+1;i<rows.length;i++){
+  for(let i=headerIndex+1;i<rows.length;i++){
     const r=rows[i];
     if(r.length<=1&&(r[0]||"").trim()==="")break;
     data.push(r);
   }
-  const toKey=s=>{const m=String(s).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`:null;};
-  const dated=data.map(r=>toKey(r[iDate])).filter(Boolean);
-  const newestFirst=dated.length>1&&dated[0]>=dated[dated.length-1];
-  let fills=[];
-  data.forEach((r,idx)=>{
+  return data;
+}
+
+// --- Broker adapters. Each: detect(rows) -> boolean, normalize(rows) -> fills
+// fills are {date, symbol, side, qty, cash, idx}. Matching/analytics only ever see fills.
+function buildFidelityFills(rows){
+  const hi=findHeaderIndex(rows);
+  if(hi<0)throw new Error("Could not find the table header. The file needs Symbol, Amount and Description (or Action) columns. Use Fidelity's History download.");
+  const head=normHead(rows[hi]);
+  const col=n=>head.indexOf(n);
+  const iAct=col("action")>=0?col("action"):col("description");
+  const iSym=col("symbol"),iAmt=col("amount"),iQty=col("quantity");
+  const iDate=["run date","date","trade date"].map(col).find(i=>i>=0);
+  if(iAct<0||iSym<0||iAmt<0||iQty<0||iDate==null)throw new Error("Missing a required column. Found: "+head.join(", "));
+  const fills=[];
+  dataRows(rows,hi).forEach((r,idx)=>{
     const act=(r[iAct]||"").toUpperCase(),sym=(r[iSym]||"").trim();
     const buy=/\bBOUGHT\b/.test(act),sell=/\bSOLD\b/.test(act);
     if(!(buy||sell)||!sym||sym.startsWith("-"))return;
     const qty=Math.abs(num(r[iQty])),cash=num(r[iAmt]),date=toKey(r[iDate]);
     if(!date||!(qty>0)||isNaN(cash))return;
-    fills.push({date,sym,idx,side:sell?-1:1,qty,cash});
+    fills.push({date,symbol:sym,side:sell?-1:1,qty,cash,idx});
   });
   if(!fills.length)throw new Error("No stock buy/sell rows found. Is this the History export with All Activity selected?");
-  fills.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(newestFirst?b.idx-a.idx:a.idx-b.idx));
+  return fills;
+}
+function stubAdapter(name){
+  return {name, detect:function(){return false;}, normalize:function(){
+    throw new Error(name+" support is not implemented yet. This build ships the Fidelity adapter only; send a real "+name+" sample export to fill it in.");
+  }};
+}
+const ADAPTERS=[
+  {name:"Fidelity", detect:rows=>findHeaderIndex(rows)>=0, normalize:buildFidelityFills},
+  // Stubs: implement only from a real sample export. Do not guess these file formats.
+  stubAdapter("Schwab"),
+  stubAdapter("thinkorswim"),
+  stubAdapter("Interactive Brokers"),
+  stubAdapter("Robinhood"),
+  stubAdapter("Webull")
+];
+
+// Generic fallback for unknown CSVs. map holds column indices; map.side may be "" to infer from the
+// sign of the quantity column.
+function normalizeGeneric(rows,headerIndex,map){
+  const data=dataRows(rows,headerIndex);
+  const fills=[];
+  data.forEach((r,idx)=>{
+    const date=toKey(r[map.date]);
+    const cash=num(r[map.amount]);
+    const rawQty=num(r[map.qty]);
+    const qty=Math.abs(rawQty);
+    let side;
+    if(map.side===""||map.side==null||map.side<0){
+      side=rawQty<0?-1:rawQty>0?1:0;
+    }else{
+      const a=String(r[map.side]||"").toUpperCase();
+      if(/\b(BOUGHT|BUY|B|BUYS)\b/.test(a))side=1;
+      else if(/\b(SOLD|SELL|S|SELLS)\b/.test(a))side=-1;
+      else side=0;
+    }
+    const sym=String(r[map.symbol]||"").trim();
+    if(!date||!side||!(qty>0)||isNaN(cash))return;
+    fills.push({date,symbol:sym||"UNKNOWN",side,qty,cash,idx});
+  });
+  if(!fills.length)throw new Error("No usable rows found with that column mapping.");
+  return fills;
+}
+
+// --- Matching + analytics. Sees normalized fills only, never raw rows.
+function compute(fills,capital){
+  const f=fills.slice();
+  const ordered=f.slice().sort((a,b)=>a.idx-b.idx);
+  const newestFirst=ordered.length>1&&ordered[0].date>=ordered[ordered.length-1].date;
+  f.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(newestFirst?b.idx-a.idx:a.idx-b.idx));
   const lots=new Map(),closed=[];
-  for(const f of fills){
-    let rem=f.qty*f.side;const fc=f.cash/f.qty;
-    if(!lots.has(f.sym))lots.set(f.sym,[]);
-    const dq=lots.get(f.sym);let pnl=0,matched=0;
+  for(const fill of f){
+    let rem=fill.qty*fill.side;const fc=fill.cash/fill.qty;
+    if(!lots.has(fill.symbol))lots.set(fill.symbol,[]);
+    const dq=lots.get(fill.symbol);let pnl=0,matched=0;
     while(rem!==0&&dq.length&&(dq[0].q>0)!==(rem>0)){
       const lot=dq[0],m=Math.min(Math.abs(rem),Math.abs(lot.q));
       pnl+=(lot.c+fc)*m;matched+=m;
@@ -166,7 +298,7 @@ function analyze(text,capital){
       if(Math.abs(lot.q)<1e-9)dq.shift();
     }
     if(Math.abs(rem)>1e-9)dq.push({q:rem,c:fc});
-    if(matched>0)closed.push({date:f.date,sym:f.sym,pnl});
+    if(matched>0)closed.push({date:fill.date,sym:fill.symbol,pnl});
   }
   if(!closed.length)throw new Error("No closed trades found: every fill is still open.");
   const byDay=new Map();
@@ -189,13 +321,22 @@ function analyze(text,capital){
   const open=[];
   lots.forEach((dq,s)=>{const q=dq.reduce((a,l)=>a+l.q,0);if(Math.abs(q)>1e-9)open.push([s,q]);});
   return{
-    net,ret:net/capital*100,maxDD,maxDDpct,fills:fills.length,closed:closed.length,
+    net,ret:net/capital*100,maxDD,maxDDpct,fills:f.length,closed:closed.length,
     winRate:wins.length/closed.length*100,avgWin:wins.length?gp/wins.length:0,avgLoss:losses.length?-gl/losses.length:0,
     pf:gl?gp/gl:null,days:days.length,green:daily.filter(d=>d.pnl>0).length,red:daily.filter(d=>d.pnl<0).length,
     best:Math.max(...daily.map(d=>d.pnl)),worst:Math.min(...daily.map(d=>d.pnl)),
-    first:days[0],last:days[days.length-1],months,open,curve,cashSum:fills.reduce((s,f)=>s+f.cash,0),capital
+    first:days[0],last:days[days.length-1],months,open,curve,cashSum:f.reduce((s,x)=>s+x.cash,0),capital
   };
 }
+
+// Tested entry point: detect a broker and return results, or throw a clear error.
+function analyze(text,capital){
+  const rows=parseCSV(String(text).replace(/^\uFEFF/,""));
+  const adapter=ADAPTERS.find(a=>a.detect(rows));
+  if(!adapter)throw new Error("Could not find the table header. The file needs Symbol, Amount and Description (or Action) columns. Use Fidelity's History download.");
+  return compute(adapter.normalize(rows),capital);
+}
+
 function demoCSV(){
   // Synthetic, deterministic demo trades. Not real results.
   let a=20260129;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
@@ -281,15 +422,65 @@ function render(r){
   $("months").innerHTML=`<table><thead><tr><th>Month</th><th>Net P&amp;L</th></tr></thead><tbody>${ms.map(m=>`<tr><td>${m}</td><td class="${cls(r.months[m])}">${money(r.months[m],2)}</td></tr>`).join("")}</tbody></table>`;
 }
 
+function setMsg(t,err){const m=$("msg");m.textContent=t;m.className=err?"err":"";}
+function getCapital(){return parseFloat($("capital").value);}
+
+// --- Column-mapping fallback for unrecognised files.
+const FIELDS=[
+  {key:"date",label:"Date / run date"},
+  {key:"symbol",label:"Symbol"},
+  {key:"side",label:"Side / action"},
+  {key:"qty",label:"Quantity"},
+  {key:"amount",label:"Amount (net cash)"}
+];
+let lastRows=null,lastHeader=-1;
+const AUTO={date:["run date","date","trade date","trade_date","settlement date"],symbol:["symbol","ticker","instrument"],side:["action","description","side","type","transaction"],qty:["quantity","qty","shares","filled"],amount:["amount","net amount","total","value"]};
+function showMapper(rows){
+  lastHeader=guessHeaderIndex(rows);
+  const head=rows[lastHeader]||[];
+  const opts=head.map((h,i)=>`<option value="${i}">${esc(String(h).trim()||("Column "+(i+1)))}</option>`).join("");
+  const sideOpts=`<option value="">Infer from quantity sign</option>`+opts;
+  $("mapgrid").innerHTML=FIELDS.map(f=>{
+    const list=f.key==="side"?sideOpts:opts;
+    const label=`<label>${esc(f.label)}<select data-field="${f.key}">${list}</select></label>`;
+    return label;
+  }).join("");
+  $("mapgrid").querySelectorAll("select").forEach(sel=>{
+    const f=sel.dataset.field,names=AUTO[f]||[];
+    let idx=-1;names.forEach(n=>{if(idx<0)idx=head.findIndex(h=>String(h).trim().toLowerCase()===n);});
+    if(idx<0&&f!=="side")names.forEach(n=>{if(idx<0)idx=head.findIndex(h=>String(h).toLowerCase().includes(n));});
+    if(idx>=0)sel.value=String(idx);
+  });
+  $("mapper").classList.remove("hidden");
+}
+function readMap(){
+  const m={};
+  $("mapgrid").querySelectorAll("select").forEach(sel=>{
+    const v=sel.value;
+    m[sel.dataset.field]=v===""?"":parseInt(v,10);
+  });
+  return m;
+}
+
+// processText: known broker -> results; unknown -> show the mapper and return null.
+function processText(text,cap){
+  const rows=parseCSV(String(text).replace(/^\uFEFF/,""));
+  const adapter=ADAPTERS.find(a=>a.detect(rows));
+  if(adapter){$("mapper").classList.add("hidden");lastRows=null;return compute(adapter.normalize(rows),cap);}
+  lastRows=rows;showMapper(rows);return null;
+}
+
 let lastText=null;
 function run(){
-  const cap=parseFloat($("capital").value);
   if(lastText==null)return;
+  const cap=getCapital();
   if(!(cap>0)){setMsg("Enter your starting capital as a positive number.",true);return;}
-  try{render(analyze(lastText,cap));setMsg("Done. Check these totals against your Fidelity statements before relying on them.",false);}
-  catch(e){$("out").classList.add("hidden");setMsg(e.message,true);}
+  try{
+    const r=processText(lastText,cap);
+    if(r){render(r);setMsg("Done. Check these totals against your Fidelity statements before relying on them.",false);}
+    else{$("out").classList.add("hidden");setMsg("We could not recognise this file's format. Map your columns below.",false);}
+  }catch(e){$("out").classList.add("hidden");setMsg(e.message,true);}
 }
-function setMsg(t,err){const m=$("msg");m.textContent=t;m.className=err?"err":"";}
 function load(f){
   if(!f)return;
   const rd=new FileReader();
@@ -305,7 +496,14 @@ file.addEventListener("change",()=>load(file.files[0]));
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
 drop.addEventListener("drop",e=>load(e.dataTransfer.files[0]));
 $("capital").addEventListener("input",run);
-$("demo").addEventListener("click",()=>{lastText=demoCSV();run();if(!$("msg").classList.contains("err"))setMsg("Demo data loaded: synthetic trades, not real results. Drop your own CSV to analyze your account.",false);});
+$("demo").addEventListener("click",()=>{lastText=demoCSV();lastRows=null;run();if(!$("msg").classList.contains("err"))setMsg("Demo data loaded: synthetic trades, not real results. Drop your own CSV to analyze your account.",false);});
+$("mgo").addEventListener("click",()=>{
+  if(!lastRows)return;
+  const cap=getCapital();
+  if(!(cap>0)){setMsg("Enter your starting capital as a positive number.",true);return;}
+  try{const r=compute(normalizeGeneric(lastRows,lastHeader,readMap()),cap);render(r);setMsg("Analyzed with your column mapping. Verify against your statements.",false);}
+  catch(e){$("out").classList.add("hidden");setMsg(e.message,true);}
+});
 </script>
 </body>
 </html>
