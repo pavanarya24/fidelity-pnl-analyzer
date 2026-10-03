@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<title>Fidelity P&L Analyzer: real net P&L from your history CSV</title>
+<meta name="description" content="Drop in your Fidelity history CSV and get net P&L, profit factor, drawdown and an equity curve. Runs entirely in your browser; your file is never uploaded.">
+<style>
+:root{
+  --bg:#eef1f5; --panel:#ffffff; --ink:#15202b; --muted:#5b6876; --line:#d5dbe3;
+  --accent:#1f4fd8; --gain:#17744a; --loss:#b3261e; --gainbg:#e3f2ea; --lossbg:#f9e4e2;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#10151b; --panel:#171e26; --ink:#e8edf2; --muted:#93a0ae; --line:#2b3541;
+  --accent:#7ba0ff; --gain:#4cc38a; --loss:#ff7d73; --gainbg:#12291f; --lossbg:#34171a;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:28px 18px 56px}
+h1{font-size:clamp(1.7rem,4vw,2.4rem);line-height:1.15;margin:0 0 8px;letter-spacing:-.02em}
+.lede{color:var(--muted);max-width:62ch;margin:0 0 20px}
+.privacy{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:12px 14px;margin-bottom:18px;font-size:.95rem}
+.controls{display:grid;grid-template-columns:1fr 220px;gap:14px;margin-bottom:12px}
+@media(max-width:640px){.controls{grid-template-columns:1fr}}
+.drop{border:2px dashed var(--line);border-radius:8px;background:var(--panel);padding:26px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over,.drop:focus-visible{border-color:var(--accent);outline:none}
+.drop strong{display:block;font-size:1.05rem}
+.drop span{color:var(--muted);font-size:.9rem}
+label.cap{display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;font-size:.9rem;color:var(--muted)}
+input[type=number]{font:inherit;font-size:1.15rem;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;background:var(--accent);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+@media(prefers-color-scheme:dark){button{color:#0b1220}}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.demoline{margin:0 0 4px;color:var(--muted);font-size:.9rem}
+#msg{min-height:1.4em;margin:6px 0 14px;font-size:.95rem}
+#msg.err{color:var(--loss)}
+.hidden{display:none}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+@media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.kpi small{display:block;color:var(--muted);font-size:.82rem;margin-bottom:2px}
+.kpi b{font-size:1.5rem;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pos{color:var(--gain)} .neg{color:var(--loss)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px;font-size:.92rem}
+.stats div small{display:block;color:var(--muted);font-size:.8rem}
+.stats div span{font-variant-numeric:tabular-nums;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
+.card h2{font-size:1.05rem;margin:0 0 8px}
+svg{width:100%;height:auto;display:block}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.95rem}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;font-size:.85rem}
+.warn{background:var(--lossbg);border:1px solid var(--loss);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:.93rem}
+.note{color:var(--muted);font-size:.85rem;margin-top:22px;max-width:75ch}
+details{margin:14px 0;color:var(--muted);font-size:.92rem}
+summary{cursor:pointer;color:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Fidelity P&amp;L Analyzer</h1>
+  <p class="lede">Fidelity's history file lists fills, not results. Drop it in to get net P&amp;L after fees, profit factor, drawdown and an equity curve, using FIFO matching for longs and shorts.</p>
+
+  <div class="privacy"><div><b>Your file never leaves your browser.</b> This page makes no network requests and has no server or analytics. Disconnect from the internet after loading it and it still works.</div></div>
+
+  <div class="controls">
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a Fidelity history CSV file">
+      <strong>Drop your Fidelity history CSV here</strong>
+      <span>or click to choose a file (Accounts &gt; Activity &amp; Orders &gt; History &gt; Download)</span>
+      <input type="file" id="file" accept=".csv,text/csv" class="hidden">
+    </div>
+    <label class="cap">Starting capital ($)
+      <input type="number" id="capital" min="1" step="100" value="10000">
+    </label>
+  </div>
+  <p class="demoline"><button id="demo" type="button">Try it with demo data</button> <span>Synthetic trades, so you can see the output without a file.</span></p>
+  <div id="msg" role="status"></div>
+
+  <section id="out" class="hidden">
+    <div id="warn"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="stats" id="stats"></div>
+    <div class="card"><h2>Equity curve and drawdown (daily closes, realized P&amp;L)</h2><div id="chart"></div></div>
+    <div class="card"><h2>Monthly net P&amp;L</h2><div id="months"></div></div>
+  </section>
+
+  <details>
+    <summary>How the numbers are calculated</summary>
+    <p>Only stock buys and sells are used; option rows and entries with no symbol are skipped. Each fill's net cash amount from Fidelity's Amount column is used, so commissions and fees are included. Fills are matched first-in-first-out per symbol, and positions can carry across days. Closed trades are counted per closing fill. Drawdown is measured on end-of-day realized equity against the running peak (never below starting capital). Margin interest, borrow fees and other non-trade entries are not included.</p>
+    <p>Fidelity history has dates but no times. Within a day, fills follow the file order (newest first is detected automatically). Totals are unaffected, but individual trade results can shift.</p>
+    <p>Check the net P&amp;L and the "sum of all fills" line against your Fidelity statements. If positions show as unmatched, the export likely starts after they were opened.</p>
+  </details>
+  <p class="note">For analysis only. Not financial, tax or investment advice. Past results do not predict future results. Verify every figure against your official Fidelity statements.</p>
+</main>
+
+<script>
+//<core>
+function parseCSV(text){
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c;
+    }else if(c==='"') q=true;
+    else if(c===","){row.push(cell);cell="";}
+    else if(c==="\n"||c==="\r"){
+      if(c==="\r"&&text[i+1]==="\n")i++;
+      row.push(cell);cell="";rows.push(row);row=[];
+    }else cell+=c;
+  }
+  if(cell!==""||row.length){row.push(cell);rows.push(row);}
+  return rows;
+}
+function num(s){
+  if(s==null)return NaN;
+  let t=String(s).replace(/[$,\s]/g,"");
+  if(/^\(.*\)$/.test(t))t="-"+t.slice(1,-1);
+  return t===""?NaN:parseFloat(t);
+}
+function analyze(text,capital){
+  text=text.replace(/^\uFEFF/,"");
+  const rows=parseCSV(text);
+  const hi=rows.findIndex(r=>{
+    const j=r.join(",").toLowerCase();
+    return j.includes("symbol")&&j.includes("amount")&&(j.includes("action")||j.includes("description"));
+  });
+  if(hi<0)throw new Error("Could not find the table header. The file needs Symbol, Amount and Description (or Action) columns. Use Fidelity's History download.");
+  const head=rows[hi].map(h=>h.trim().replace(/\s*\(\$\)\s*/g,"").toLowerCase());
+  const col=n=>head.indexOf(n);
+  const iAct=col("action")>=0?col("action"):col("description");
+  const iSym=col("symbol"),iAmt=col("amount"),iQty=col("quantity");
+  let iDate=["run date","date","trade date"].map(col).find(i=>i>=0);
+  if(iAct<0||iSym<0||iAmt<0||iQty<0||iDate==null)throw new Error("Missing a required column. Found: "+head.join(", "));
+  const data=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i];
+    if(r.length<=1&&(r[0]||"").trim()==="")break;
+    data.push(r);
+  }
+  const toKey=s=>{const m=String(s).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`:null;};
+  const dated=data.map(r=>toKey(r[iDate])).filter(Boolean);
+  const newestFirst=dated.length>1&&dated[0]>=dated[dated.length-1];
+  let fills=[];
+  data.forEach((r,idx)=>{
+    const act=(r[iAct]||"").toUpperCase(),sym=(r[iSym]||"").trim();
+    const buy=/\bBOUGHT\b/.test(act),sell=/\bSOLD\b/.test(act);
+    if(!(buy||sell)||!sym||sym.startsWith("-"))return;
+    const qty=Math.abs(num(r[iQty])),cash=num(r[iAmt]),date=toKey(r[iDate]);
+    if(!date||!(qty>0)||isNaN(cash))return;
+    fills.push({date,sym,idx,side:sell?-1:1,qty,cash});
+  });
+  if(!fills.length)throw new Error("No stock buy/sell rows found. Is this the History export with All Activity selected?");
+  fills.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(newestFirst?b.idx-a.idx:a.idx-b.idx));
+  const lots=new Map(),closed=[];
+  for(const f of fills){
+    let rem=f.qty*f.side;const fc=f.cash/f.qty;
+    if(!lots.has(f.sym))lots.set(f.sym,[]);
+    const dq=lots.get(f.sym);let pnl=0,matched=0;
+    while(rem!==0&&dq.length&&(dq[0].q>0)!==(rem>0)){
+      const lot=dq[0],m=Math.min(Math.abs(rem),Math.abs(lot.q));
+      pnl+=(lot.c+fc)*m;matched+=m;
+      lot.q+=lot.q<0?m:-m;rem+=rem<0?m:-m;
+      if(Math.abs(lot.q)<1e-9)dq.shift();
+    }
+    if(Math.abs(rem)>1e-9)dq.push({q:rem,c:fc});
+    if(matched>0)closed.push({date:f.date,sym:f.sym,pnl});
+  }
+  if(!closed.length)throw new Error("No closed trades found: every fill is still open.");
+  const byDay=new Map();
+  closed.forEach(c=>byDay.set(c.date,(byDay.get(c.date)||0)+c.pnl));
+  const days=[...byDay.keys()].sort();
+  let eq=capital,peak=capital,maxDD=0,maxDDpct=0;
+  const curve=[{date:"start",eq:capital,dd:0}];
+  const daily=days.map(d=>{
+    eq+=byDay.get(d);peak=Math.max(peak,eq);
+    const dd=eq-peak,pct=dd/peak*100;
+    if(dd<maxDD)maxDD=dd;if(pct<maxDDpct)maxDDpct=pct;
+    curve.push({date:d,eq,dd:pct});
+    return{date:d,pnl:byDay.get(d)};
+  });
+  const wins=closed.filter(c=>c.pnl>0),losses=closed.filter(c=>c.pnl<0);
+  const sum=a=>a.reduce((s,x)=>s+x.pnl,0);
+  const gp=sum(wins),gl=-sum(losses),net=sum(closed);
+  const months={};
+  closed.forEach(c=>{const k=c.date.slice(0,7);months[k]=(months[k]||0)+c.pnl;});
+  const open=[];
+  lots.forEach((dq,s)=>{const q=dq.reduce((a,l)=>a+l.q,0);if(Math.abs(q)>1e-9)open.push([s,q]);});
+  return{
+    net,ret:net/capital*100,maxDD,maxDDpct,fills:fills.length,closed:closed.length,
+    winRate:wins.length/closed.length*100,avgWin:wins.length?gp/wins.length:0,avgLoss:losses.length?-gl/losses.length:0,
+    pf:gl?gp/gl:null,days:days.length,green:daily.filter(d=>d.pnl>0).length,red:daily.filter(d=>d.pnl<0).length,
+    best:Math.max(...daily.map(d=>d.pnl)),worst:Math.min(...daily.map(d=>d.pnl)),
+    first:days[0],last:days[days.length-1],months,open,curve,cashSum:fills.reduce((s,f)=>s+f.cash,0),capital
+  };
+}
+function demoCSV(){
+  // Synthetic, deterministic demo trades. Not real results.
+  let a=20260129;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+  const syms=["ACME","BRVO","CRSN","DLTA","ECHO","FRNT","GLXY","HRZN"];
+  const out=[];let day=new Date(Date.UTC(2026,0,29)),n=0;
+  while(n<30){
+    if(day.getUTCDay()%6!==0){
+      const ds=String(day.getUTCMonth()+1).padStart(2,"0")+"/"+String(day.getUTCDate()).padStart(2,"0")+"/"+day.getUTCFullYear();
+      const trips=8+Math.floor(rnd()*14);
+      const dayFills=[];
+      for(let i=0;i<trips;i++){
+        const s=syms[Math.floor(rnd()*syms.length)],q=[100,200,300,400][Math.floor(rnd()*4)];
+        const p=Math.round((12+rnd()*60)*100)/100,mv=(rnd()-0.485)*0.012,p2=Math.round(p*(1+mv)*100)/100;
+        const short=rnd()<0.3,fee=0.03;
+        const open={s,q:short?-q:q,p:p,amt:short?q*p-fee:-q*p},close={s,q:short?q:-q,p:p2,amt:short?-q*p2:q*p2-fee};
+        dayFills.push(open,close);
+      }
+      dayFills.forEach(f=>out.push([ds,f]));
+      n++;
+    }
+    day=new Date(day.getTime()+86400000);
+  }
+  const lines=["History: Demo Account (SYNTHETIC)","From: 01/29/2026","To: 03/12/2026","All Activity","Generated demo data, not real trades","",
+    '"Date","Description","Symbol","Quantity","Price","Amount","Commission","Fees","Type"'];
+  out.reverse().forEach(([d,f])=>{
+    const act=f.q>0?"YOU BOUGHT":"YOU SOLD";
+    lines.push(`"${d}","${act} ${f.s} DEMO INC (${f.s}) (Margin)","${f.s}","${f.q}","$${f.p.toFixed(2)}","$${f.amt.toFixed(2)}","$0.00","$0.00","Margin"`);
+  });
+  lines.push("","\"Synthetic demo data\"");
+  return lines.join("\n");
+}
+//</core>
+
+const $=id=>document.getElementById(id);
+const money=(v,d=0)=>(v<0?"-":"")+"$"+Math.abs(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const cls=v=>v>0?"pos":v<0?"neg":"";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function chart(curve,capital){
+  const W=900,H1=260,H2=90,L=62,R=12,T=10,gap=26,B=24;
+  const n=curve.length,x=i=>L+(W-L-R)*(n===1?0:i/(n-1));
+  const eqs=curve.map(c=>c.eq),lo=Math.min(...eqs,capital),hi=Math.max(...eqs,capital);
+  const pad=(hi-lo||1)*.08,y0=lo-pad,y1=hi+pad;
+  const y=v=>T+(H1-T)*(1-(v-y0)/(y1-y0));
+  const pts=curve.map((c,i)=>`${x(i).toFixed(1)},${y(c.eq).toFixed(1)}`).join(" ");
+  const base=y(capital).toFixed(1);
+  const dmin=Math.min(...curve.map(c=>c.dd),-1),dy=v=>T+H1+gap+(H2)*(v/dmin);
+  const dpts=`${x(0)},${dy(0)} `+curve.map((c,i)=>`${x(i).toFixed(1)},${dy(c.dd).toFixed(1)}`).join(" ")+` ${x(n-1)},${dy(0)}`;
+  let g="";
+  for(let k=0;k<=4;k++){const v=y0+(y1-y0)*k/4;g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${money(v)}</text>`;}
+  const yb=T+H1+gap+H2+16;
+  return `<svg viewBox="0 0 ${W} ${T+H1+gap+H2+B+4}" role="img" aria-label="Equity curve and drawdown chart">
+  ${g}
+  <line x1="${L}" x2="${W-R}" y1="${base}" y2="${base}" stroke="var(--muted)" stroke-dasharray="4 4"/>
+  <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/>
+  <polygon points="${dpts}" fill="var(--loss)" fill-opacity=".35" stroke="var(--loss)" stroke-width="1"/>
+  <text x="${L-8}" y="${dy(0)+4}" text-anchor="end" font-size="11" fill="var(--muted)">0%</text>
+  <text x="${L-8}" y="${dy(dmin)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${dmin.toFixed(0)}%</text>
+  <text x="${L}" y="${yb}" font-size="11" fill="var(--muted)">${esc(curve[1]?curve[1].date:"")}</text>
+  <text x="${W-R}" y="${yb}" text-anchor="end" font-size="11" fill="var(--muted)">${esc(curve[n-1].date)}</text>
+  </svg>`;
+}
+
+function render(r){
+  $("out").classList.remove("hidden");
+  $("warn").innerHTML=r.open.length?`<div class="warn"><b>${r.open.length} unmatched open position${r.open.length>1?"s":""}.</b> Either the export starts after these were opened, or they are still held: ${r.open.slice(0,12).map(o=>esc(o[0])+" "+(o[1]>0?"+":"")+o[1]).join(", ")}${r.open.length>12?", ...":""}. Results for those symbols may be incomplete.</div>`:"";
+  $("kpis").innerHTML=[
+    ["Net realized P&amp;L",money(r.net),cls(r.net)],
+    ["Return on capital",(r.ret>=0?"+":"")+r.ret.toFixed(1)+"%",cls(r.ret)],
+    ["Max drawdown",r.maxDDpct.toFixed(1)+"%","neg"],
+    ["Profit factor",r.pf==null?"n/a":r.pf.toFixed(2),""]
+  ].map(k=>`<div class="kpi"><small>${k[0]}</small><b class="${k[2]}">${k[1]}</b></div>`).join("");
+  const st=[
+    ["Period",`${r.first} to ${r.last}`],["Trading days",`${r.days} (${r.green} green, ${r.red} red)`],
+    ["Closed trades",r.closed.toLocaleString()],["Fills used",r.fills.toLocaleString()],
+    ["Win rate",r.winRate.toFixed(1)+"%"],["Average win",money(r.avgWin,2)],["Average loss",money(-r.avgLoss,2)],
+    ["Best day",money(r.best,2)],["Worst day",money(r.worst,2)],["Max drawdown ($)",money(r.maxDD,2)],
+    ["Sum of all fills",money(r.cashSum,2)]
+  ];
+  $("stats").innerHTML=st.map(s=>`<div><small>${s[0]}</small><span>${s[1]}</span></div>`).join("");
+  $("chart").innerHTML=chart(r.curve,r.capital);
+  const ms=Object.keys(r.months).sort();
+  $("months").innerHTML=`<table><thead><tr><th>Month</th><th>Net P&amp;L</th></tr></thead><tbody>${ms.map(m=>`<tr><td>${m}</td><td class="${cls(r.months[m])}">${money(r.months[m],2)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+let lastText=null;
+function run(){
+  const cap=parseFloat($("capital").value);
+  if(lastText==null)return;
+  if(!(cap>0)){setMsg("Enter your starting capital as a positive number.",true);return;}
+  try{render(analyze(lastText,cap));setMsg("Done. Check these totals against your Fidelity statements before relying on them.",false);}
+  catch(e){$("out").classList.add("hidden");setMsg(e.message,true);}
+}
+function setMsg(t,err){const m=$("msg");m.textContent=t;m.className=err?"err":"";}
+function load(f){
+  if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{lastText=String(rd.result);setMsg("Reading "+f.name+"...",false);run();};
+  rd.onerror=()=>setMsg("Could not read that file.",true);
+  rd.readAsText(f);
+}
+const drop=$("drop"),file=$("file");
+drop.addEventListener("click",()=>file.click());
+drop.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();file.click();}});
+file.addEventListener("change",()=>load(file.files[0]));
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>load(e.dataTransfer.files[0]));
+$("capital").addEventListener("input",run);
+$("demo").addEventListener("click",()=>{lastText=demoCSV();run();if(!$("msg").classList.contains("err"))setMsg("Demo data loaded: synthetic trades, not real results. Drop your own CSV to analyze your account.",false);});
+</script>
+</body>
+</html>

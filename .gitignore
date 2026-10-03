@@ -1,0 +1,6 @@
+# Never commit real broker data or generated reports
+*.csv
+!sample/demo_synthetic.csv
+*_report_*.csv
+equity_chart*.png
+__pycache__/
